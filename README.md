@@ -12,23 +12,24 @@ Some alpha-conversion is done on functions in order not to fail when arguments n
 Removal of "let ... in" construct is also done beforehand in order to avoid name capture, for example :
 
 ```ocaml
-let f x = x 
+let f x = x ;;
 
 let g y = 
-   let f x = x * 42 in 
-   f 2
+   let z = 42 in
+   let f x = x * z in 
+   f 2 ;;
 ```
 
 is changed to 
 
 ```ocaml
-let f x = x 
+let f x = x ;;
 
 let g y =  
-   (fun x -> x * 42) 2
+   (fun x -> x * 42) 2 ;;
 ```
 
-before inlining any function.
+before inlining any global function.
 
 
 # Compile and run
