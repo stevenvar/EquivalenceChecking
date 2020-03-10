@@ -37,7 +37,8 @@ let rec remove_rec_calls name f expr =
   | Variable s -> Variable s
   | Value i -> Value i
 
-let remove_rec_calls_item f i = 
+let remove_rec_calls_item f i =
+  fresh_reset ();
   match i with 
   | Recdef (name,expr) when f = name -> Def(name,remove_rec_calls ("U_"^fresh_name ()) f expr)
   | _ -> i
