@@ -11,7 +11,7 @@ Some alpha-conversion is done on functions in order not to fail when arguments n
 
 Removal of "let ... in" construct is also done beforehand in order to avoid name capture, for example :
 
-```
+```ocaml
 let f x = x 
 
 let g y = 
@@ -21,7 +21,7 @@ let g y =
 
 is changed to 
 
-```
+```ocaml
 let f x = x 
 
 let g y =  
