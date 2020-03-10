@@ -2,7 +2,7 @@
 Prototype for equivalence checking of two ML programs 
 
 
-This checks if two programs are syntactically the same after inlining functions which body looks different in both programs.
+This checks if two programs are syntactically the same after inlining functions which bodies look different in both programs.
 Using this, we can detect renamings, currying, swapping of parameters, generalisation (adding a parameter), eta-conversion...
 
 Functions absent in either programs are also inlined, which allows checking for extraction of code or manual inlining of functions. 
