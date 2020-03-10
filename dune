@@ -1,0 +1,4 @@
+(executable
+  (name comparing))
+(include_subdirs unqualified)
+(dirs parsing src)
