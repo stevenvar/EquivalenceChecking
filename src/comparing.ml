@@ -2,15 +2,47 @@
 
 let compare_maps m1 m2 =
   let open Inlining in
-  (* TO FIX *)
-  (* The issue with that if all the functions depending on a rename are themselves
-   * different (since they don't call the same function)
-   * a solution would be to do the already computed inlines before comparing further functions *)
-  (* The other issue is that since we remove the functions that we inline, we can end up with two empty programs for two completely different programs, which would say that they are equal *)
   let must_keep f v =
     not (FunMap.mem f m2) || FunMap.find f m2 <> v
   in
   FunMap.filter (fun k v -> must_keep k v) m1 |> FunMap.bindings |> List.map fst
+
+
+let get_roots m =
+  let is_function =
+    function Ast.Lambda (_,_) -> true
+           | _ -> false
+  in
+  Inlining.FunMap.filter (fun _ v -> not (is_function v)) m
+
+  
+let rec call_graph e =
+  let (++) = List.append in 
+  let open Ast in 
+  match e with
+  | Value _ -> []
+  | Variable s -> [s]
+  | Tuple (es) -> List.fold_left (fun acc x -> (call_graph x) ++ acc) [] es
+  | Binop (_,e1,e2) ->
+     call_graph e1 ++ call_graph e2
+  | If (e1,e2,e3) ->
+     call_graph e1 ++ call_graph e2 ++ call_graph e3
+  | Seq (e1,e2) ->
+     call_graph e1 ++ call_graph e2
+  | Let (x,e1,e2) ->
+     call_graph e1 ++ List.filter (fun y -> y <> x) (call_graph e2)
+  | Apply (e1,e2) ->
+     call_graph e1 ++ call_graph e2
+  | Lambda (Str x,e) ->
+     List.filter (fun y -> y <> x) (call_graph e)
+  | Lambda (_,e) ->
+     (call_graph e)
+  | _ -> []
+
+let compare_graph v1 v2 =
+  let deps1 = call_graph v1 in
+  let deps2 = call_graph v2 in
+  v1 = v2 && (List.fold_left2 (fun acc x1 x2 -> x1 = x2 && acc) true deps1 deps2)  
     
 let _ =
   let open Inlining in
@@ -26,6 +58,7 @@ let _ =
   let p1 = rename_lambdas_ast p1 in
   let p2 = rename_lambdas_ast p2 in
   Ast.print_ast p1;
+  Printf.printf "\n---\n";
   Ast.print_ast p2;
   (* Get the maps (function,value) for both programs *)
   let m1 = create_map p1 in
@@ -43,9 +76,28 @@ let _ =
   (* Check equality (might bug if the result is empty lists TO FIX)) *)
   Printf.printf "\n\nResult:\n";
   Ast.print_ast p1';
-    Printf.printf "\n---\n";
+  Printf.printf "\n---\n";
   Ast.print_ast p2';
-  if p1' = [] && p2' = [] then failwith "empty programs";
-  Printf.printf "\nAre the programs equivalent ? %b\n" (p1'=p2')
+  Printf.printf "\n---\n";
+
+  let roots1 = get_roots (create_map p1') in
+  let roots2 = get_roots (create_map p2') in
+  FunMap.iter (fun k v -> Printf.printf "\nRoots : let %s ="
+                            k;
+                          Ast.print_expr v) roots1;
+  FunMap.iter (fun k v -> Printf.printf "\nRoots : let %s ="
+                            k;
+                          Ast.print_expr v) roots2;
+  let result = FunMap.fold (fun k v acc ->
+      compare_graph v (FunMap.find k roots2) && acc) roots1 true in
+  let result = FunMap.fold (fun k v acc ->
+      compare_graph v (FunMap.find k roots1) && acc) roots2 result in
+  
+  Printf.printf "\nAre the progs equals? %b\n" result
+  
+    
+    
+  (* if p1' = [] && p2' = [] then failwith "empty programs";
+   * Printf.printf "\nAre the programs equivalent ? %b\n" (p1'=p2') *)
   
   

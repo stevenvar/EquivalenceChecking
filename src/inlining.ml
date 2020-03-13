@@ -178,19 +178,11 @@ let remove_function f p =
         Def (name,_) | Recdef (name,_) -> f <> name) p
 
 let run f p =
-  Printf.printf "\n\n------- PROGRAM ------- \n";
-  (* Printf.printf "\nBEFORE :\n"; *)
-  (* print_ast p; *)
   let k = remove_rec_calls_ast f p in 
-  (* Printf.printf "\n\nAFTER REMOVING REC CALLS :\n"; *)
-  (* print_ast k; *)
   let k = inline_ast f k in 
-  Printf.printf "\n\nAFTER INLINING %s :\n" f;
-  (* print_ast k; *)
   let k = reduce_ast k in
-  (* Printf.printf "\n\nAFTER REDUCING :\n"; *)
-  print_ast k;
-  remove_function f k
+  k
+
 
 
 let change f1 p1 f2 p2 = 
