@@ -37,12 +37,19 @@ let rec call_graph e =
      List.filter (fun y -> y <> x) (call_graph e)
   | Lambda (_,e) ->
      (call_graph e)
-  | _ -> []
+  | Uninterpreted _ -> []
+ 
 
-let compare_graph v1 v2 =
+let rec compare_graph v1 v2 m1 m2 =
+  let open Inlining in
+  let aux x1 x2 =
+    (* Printf.printf "Comparing %s and %s" x1 x2 ; *)
+    compare_graph (FunMap.find x1 m1) (FunMap.find x2 m2) m1 m2 in
   let deps1 = call_graph v1 in
   let deps2 = call_graph v2 in
-  v1 = v2 && (List.fold_left2 (fun acc x1 x2 -> x1 = x2 && acc) true deps1 deps2)  
+  (* List.iter (print_string) deps1; *)
+  (* List.iter (print_string) deps2; *)
+  v1 = v2 && (List.fold_left2 (fun acc x1 x2 -> aux x1 x2 && acc) true deps1 deps2)  
     
 let _ =
   let open Inlining in
@@ -79,9 +86,10 @@ let _ =
   Printf.printf "\n---\n";
   Ast.print_ast p2';
   Printf.printf "\n---\n";
-
-  let roots1 = get_roots (create_map p1') in
-  let roots2 = get_roots (create_map p2') in
+  let m1'= (create_map p1') in
+  let m2'= (create_map p2') in
+  let roots1 = get_roots m1' in
+  let roots2 = get_roots m2' in
   FunMap.iter (fun k v -> Printf.printf "\nRoots : let %s ="
                             k;
                           Ast.print_expr v) roots1;
@@ -89,9 +97,9 @@ let _ =
                             k;
                           Ast.print_expr v) roots2;
   let result = FunMap.fold (fun k v acc ->
-      compare_graph v (FunMap.find k roots2) && acc) roots1 true in
+      compare_graph v (FunMap.find k roots2) m1' m2' && acc) roots1 true in
   let result = FunMap.fold (fun k v acc ->
-      compare_graph v (FunMap.find k roots1) && acc) roots2 result in
+      compare_graph v (FunMap.find k roots1) m1' m2' && acc) roots2 result in
   
   Printf.printf "\nAre the progs equals? %b\n" result
   
